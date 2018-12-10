@@ -65,14 +65,14 @@ def download_job_files(config: Config, job: Job) -> None:
     job.state = 'downloading'
     job.commit()
 
-    filename = os.path.join(config.workdir, job.job_id, 'input',
-                            '{}.gbk'.format(job.download))
+    dl_prefix = os.path.join(config.workdir, job.job_id, 'input', job.download)
     nad_conf = NadConfig(format="genbank", recursive=True)
 
-    download_to_file(job.download, nad_conf, filename)
+    download_to_file(job.download, nad_conf, dl_prefix)
 
     job.state = 'queued'
     job.needs_download = False
+    job.filename = '{}.gbk'.format(job.download)
     job.commit()
 
 
