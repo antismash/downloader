@@ -27,7 +27,7 @@ def run(config: Config) -> None:
                 print("stop scheduled, exiting")
                 break
             run_loop(config, db)
-            time.sleep(5)
+            time.sleep(1)
     finally:
         print("cleaning up")
         control.delete()
