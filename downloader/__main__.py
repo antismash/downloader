@@ -16,6 +16,7 @@
 import argparse
 import os
 import platform
+import sys
 
 from downloader.config import Config
 from downloader.core import run
@@ -29,11 +30,17 @@ def main() -> None:
     parser.add_argument('-n', '--name',
                         default=platform.node(),
                         help="Host-specific name of the downloader (default: %(default)s).")
+    parser.add_argument('-p', '--print-config',
+                        action="store_true", default=False,
+                        help="Print the configuration and exit.")
     args = parser.parse_args()
 
     conf = Config.from_configfile(args.name, args.configfile)
 
-    print(conf)
+    if args.print_config:
+        print(conf)
+        sys.exit(0)
+
     run(conf)
 
 
