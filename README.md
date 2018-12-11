@@ -30,26 +30,26 @@ file in [TOML](https://github.com/toml-lang/toml) format.
 
 Example:
 ```toml
-redis.url = redis_host
-redis.port = 6379
-redis.db = 0
+[redis]
+url = redis_host
+port = 6379
+db = 0
 ```
 
 #### `antismash` options
 
-For now, there are two main options: the queues to listen on, and the queues to
-push jobs into. The number of input and output queues need to be the same, jobs
-collected from the input queue at index *i* will be deposited at index *i* of
-the output queue list.
-
-Additionally, you can configure the queue failed jobs will be dumped into. All
-failed jobs end up in the same queue.
+* **queues**: A list of queues to service. The input queue names are created by adding the `download_suffix`, see below.
+* **download_suffix**: A suffix to append to an output queue name to get the download queue name.
+* **failed_queue**: Queue to deposit failed jobs into.
+* **workdir**: Path to directory holding all the antiSMASH job files.
 
 Example:
 ```toml
-antismash.input_queues = [ "jobs:download-fast", "jobs:download", "jobs:download-dev" ]
-antismash.output_queues = [ "jobs:minimal", "jobs:queued", "jobs:development" ]
-antismash.failed_queue = "jobs:failed"
+[antismash]
+queues = [ "jobs:fast", "jobs:queued", "jobs:development" ]
+download_suffix = "downloads"
+failed_queue = "jobs:failed"
+workdir = "/path/to/antismash/upload/dir"
 ```
 
 License
