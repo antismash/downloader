@@ -13,6 +13,7 @@ install_requires = [
     'antismash-models[sync] >= 0.1.11',
     'hiredis',
     'ncbi-acc-download[recursive]',
+    'prometheus_client',
     'redis',
     'toml',
 ]

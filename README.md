@@ -52,6 +52,20 @@ failed_queue = "jobs:failed"
 workdir = "/path/to/antismash/upload/dir"
 ```
 
+
+#### `metrics` options
+
+* **port**: Port to expose Prometheus metrics on
+* **use_metrics**: Turn metrics reporting on/off
+
+Example:
+```toml
+[metrics]
+port = 9151
+use_metrics = true
+```
+
+
 License
 -------
 
