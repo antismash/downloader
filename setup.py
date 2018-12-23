@@ -11,8 +11,9 @@ long_description = read('README.md')
 
 install_requires = [
     'antismash-models[sync] >= 0.1.11',
+    'biopython',
     'hiredis',
-    'ncbi-acc-download[recursive] >= 0.2.2',
+    'ncbi-acc-download >= 0.2.3',
     'prometheus_client',
     'redis',
     'toml',
