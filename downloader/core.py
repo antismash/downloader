@@ -66,7 +66,7 @@ def run_loop(config: Config, db: redis.Redis) -> None:
     if job.needs_download and job.download:
         try:
             download_job_files(config, job)
-        except (DownloadError, ValidationError) as err:
+        except (DownloadError, ValidationError, ValueError) as err:
             job.state = "failed"
             job.status = "Failed to download file form NCBI"
             job.commit()
@@ -78,6 +78,9 @@ def run_loop(config: Config, db: redis.Redis) -> None:
                     INVALID_ID.inc()
                 else:
                     DOWNLOAD_ERROR.inc()
+            elif isinstance(err, ValueError):
+                print("ValueError raised when trying to download {j.job_id}:{j.download}".format(j=job))
+                DOWNLOAD_ERROR.inc()
 
     db.lrem(my_queue, 1, job.job_id)
     db.lpush(queue_name, job.job_id)
