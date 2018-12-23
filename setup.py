@@ -12,7 +12,7 @@ long_description = read('README.md')
 install_requires = [
     'antismash-models[sync] >= 0.1.11',
     'hiredis',
-    'ncbi-acc-download[recursive]',
+    'ncbi-acc-download[recursive] >= 0.2.2',
     'prometheus_client',
     'redis',
     'toml',
