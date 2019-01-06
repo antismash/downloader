@@ -14,6 +14,7 @@
 """antiSMASH web infrastructure NCBI download service."""
 
 import argparse
+import logging
 import os
 import platform
 import sys
@@ -41,8 +42,10 @@ def main() -> None:
         print(conf)
         sys.exit(0)
 
-    run(conf)
+    logging.basicConfig(format='%(levelname)-7s %(asctime)s   %(message)s',
+                        level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S")
 
+    run(conf)
 
 if __name__ == "__main__":
     main()
