@@ -8,6 +8,7 @@ class Config:
     """Central configuration class for the antiSMASH download service."""
 
     __slots__ = (
+        "download_queue",
         "download_suffix",
         "failed_queue",
         "metrics_port",
@@ -22,6 +23,7 @@ class Config:
 
     def __init__(self,
                  name: str,
+                 download_queue: str = "jobs:downloads",
                  download_suffix: str = "downloads",
                  failed_queue: str = "jobs:failed",
                  metrics_port: int = 9151,
@@ -41,6 +43,7 @@ class Config:
 
         self.failed_queue = failed_queue
         self.queues = queues
+        self.download_queue = download_queue
         self.download_suffix = download_suffix
 
         self.redis_host = redis_host
@@ -73,6 +76,8 @@ class Config:
                 params['failed_queue'] = config['antismash']['failed_queue']
             if 'queues' in config['antismash']:
                 params['queues'] = config['antismash']['queues']
+            if 'download_queue' in config['antismash']:
+                params['download_queue'] = config['antismash']['download_queue']
             if 'download_suffix' in config['antismash']:
                 params['download_suffix'] = config['antismash']['download_suffix']
             if 'workdir' in config['antismash']:

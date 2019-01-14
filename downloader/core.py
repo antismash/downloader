@@ -53,11 +53,19 @@ def run_loop(config: Config, db: redis.Redis) -> None:
     """Run one iteration of the main loop."""
     my_queue = "{}:downloading".format(config.name)
     uid = None
-    for queue_name in config.queues:
-        dl_queue = "{}:{}".format(queue_name, config.download_suffix)
-        uid = db.rpoplpush(dl_queue, my_queue)
+    queues_to_check = [config.download_queue]
+
+    # TODO: remove once no legacy webapis are creating these
+    for queue in config.queues:
+        queues_to_check.append("{}:{}".format(queue, config.download_suffix))
+
+    # First, try to pick up any left over jobs from before a crash
+    uid = db.lindex(my_queue, -1)
+
+    for queue in queues_to_check:
         if uid is not None:
             break
+        uid = db.rpoplpush(queue, my_queue)
 
     if uid is None:
         return
@@ -69,8 +77,7 @@ def run_loop(config: Config, db: redis.Redis) -> None:
         except (DownloadError, ValidationError, ValueError) as err:
             job.state = "failed"
             job.status = "Failed to download file form NCBI"
-            job.commit()
-            queue_name = config.failed_queue
+            job.target_queues.append(config.failed_queue)
             if isinstance(err, ValidationError):
                 VALIDATION_ERROR.inc()
             elif isinstance(err, DownloadError):
@@ -82,6 +89,15 @@ def run_loop(config: Config, db: redis.Redis) -> None:
                 print("ValueError raised when trying to download {j.job_id}:{j.download}".format(j=job))
                 DOWNLOAD_ERROR.inc()
 
+    if job.target_queues:
+        queue_name = job.target_queues.pop()
+    elif queue.endswith(config.download_suffix):
+        # TODO: Legacy option, remove when all web APIs are adjusted
+        queue_name = queue[:-(len(config.download_suffix) + 1)]
+    else:
+        # fallback, do we want this?
+        queue_name = "jobs:queued"
+    job.commit()
     db.lrem(my_queue, 1, job.job_id)
     db.lpush(queue_name, job.job_id)
 
@@ -91,6 +107,7 @@ def download_job_files(config: Config, job: Job) -> None:
     """Download the files of an antiSMASH job."""
     job.state = 'downloading'
     job.status = "Downloading {} from NCBI".format(job.download)
+    job.trace.append(config.name)
     job.commit()
 
     dl_prefix = os.path.join(config.workdir, job.job_id, 'input', job.download)
@@ -100,6 +117,7 @@ def download_job_files(config: Config, job: Job) -> None:
 
     job.state = 'queued'
     job.needs_download = False
+    job.status = "pending"
     job.filename = '{}.gbk'.format(job.download)
     job.commit()
 
