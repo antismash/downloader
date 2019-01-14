@@ -21,7 +21,7 @@ install_requires = [
 
 tests_require = [
     'coverage',
-    'mockredispy-kblin',
+    'mockredispy-kblin >= 2.9.3.4',
     'pytest',
     'pytest-cov',
     'pytest-mock',
