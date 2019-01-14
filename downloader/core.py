@@ -4,6 +4,7 @@ from antismash_models import (
     SyncControl as Control,
     SyncJob as Job,
 )
+import logging
 from ncbi_acc_download.core import Config as NadConfig
 from ncbi_acc_download.core import download_to_file
 from ncbi_acc_download.errors import (
@@ -73,6 +74,7 @@ def run_loop(config: Config, db: redis.Redis) -> None:
     job = Job(db, uid).fetch()
     if job.needs_download and job.download:
         try:
+            logging.info("Downloading files for %s", job.job_id)
             download_job_files(config, job)
         except (DownloadError, ValidationError, ValueError) as err:
             job.state = "failed"
