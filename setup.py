@@ -13,7 +13,7 @@ install_requires = [
     'antismash-models[sync] >= 0.1.13',
     'biopython',
     'hiredis',
-    'ncbi-acc-download >= 0.2.3',
+    'ncbi-acc-download >= 0.2.5',
     'prometheus_client',
     'redis',
     'toml',
