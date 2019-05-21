@@ -10,7 +10,7 @@ def read(fname):
 long_description = read('README.md')
 
 install_requires = [
-    'antismash-models[sync] >= 0.1.13',
+    'antismash-models[sync] >= 0.1.17',
     'biopython',
     'hiredis',
     'ncbi-acc-download >= 0.2.5',

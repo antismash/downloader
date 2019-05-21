@@ -44,6 +44,7 @@ def run(config: Config) -> None:
                 print("stop scheduled, exiting")
                 break
             run_loop(config, db)
+            control.alive()
             time.sleep(1)
     finally:
         print("cleaning up")
