@@ -21,6 +21,7 @@ import redis
 import time
 
 from downloader.config import Config
+from downloader.version import git_version
 
 
 DOWNLOAD_TIME = Summary("download_processing_seconds", "Time spent downloading files from NCBI")
@@ -33,7 +34,7 @@ def run(config: Config) -> None:
     """Run the antiSMASH download service."""
 
     db = create_db(config)
-    control = Control(db, config.name, 1)
+    control = Control(db, config.name, 1, git_version())
     control.commit()
 
     try:
