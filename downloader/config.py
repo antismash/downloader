@@ -9,11 +9,9 @@ class Config:
 
     __slots__ = (
         "download_queue",
-        "download_suffix",
         "failed_queue",
         "metrics_port",
         "name",
-        "queues",
         "redis_db",
         "redis_host",
         "redis_port",
@@ -24,10 +22,8 @@ class Config:
     def __init__(self,
                  name: str,
                  download_queue: str = "jobs:downloads",
-                 download_suffix: str = "downloads",
                  failed_queue: str = "jobs:failed",
                  metrics_port: int = 9151,
-                 queues: Sequence[str] = ["jobs:queued"],
                  redis_db: int = 0,
                  redis_host: str = "localhost",
                  redis_port: int = 6379,
@@ -42,9 +38,7 @@ class Config:
         self.metrics_port = metrics_port
 
         self.failed_queue = failed_queue
-        self.queues = queues
         self.download_queue = download_queue
-        self.download_suffix = download_suffix
 
         self.redis_host = redis_host
         self.redis_port = redis_port
@@ -54,7 +48,7 @@ class Config:
         return (
             "Config(n={c.name}, "
             "redis=redis://{c.redis_host}:{c.redis_port}/{c.redis_db}, "
-            "q={c.queues}, s={c.download_suffix}, f={c.failed_queue}, "
+            "q={c.download_queue}, f={c.failed_queue}, "
             "w={c.workdir}, m={c.use_metrics}({c.metrics_port}))".format(c=self))
 
     @classmethod
@@ -74,12 +68,8 @@ class Config:
         if 'antismash' in config:
             if 'failed_queue' in config['antismash']:
                 params['failed_queue'] = config['antismash']['failed_queue']
-            if 'queues' in config['antismash']:
-                params['queues'] = config['antismash']['queues']
             if 'download_queue' in config['antismash']:
                 params['download_queue'] = config['antismash']['download_queue']
-            if 'download_suffix' in config['antismash']:
-                params['download_suffix'] = config['antismash']['download_suffix']
             if 'workdir' in config['antismash']:
                 params['workdir'] = config['antismash']['workdir']
         if 'metrics' in config:

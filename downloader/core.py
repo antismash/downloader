@@ -58,10 +58,6 @@ def run_loop(config: Config, db: redis.Redis) -> None:
     uid = None
     queues_to_check = [config.download_queue]
 
-    # TODO: remove once no legacy webapis are creating these
-    for queue in config.queues:
-        queues_to_check.append("{}:{}".format(queue, config.download_suffix))
-
     # First, try to pick up any left over jobs from before a crash
     uid = db.lindex(my_queue, -1)
 
@@ -95,9 +91,6 @@ def run_loop(config: Config, db: redis.Redis) -> None:
 
     if job.target_queues:
         queue_name = job.target_queues.pop()
-    elif queue.endswith(config.download_suffix):
-        # TODO: Legacy option, remove when all web APIs are adjusted
-        queue_name = queue[:-(len(config.download_suffix) + 1)]
     else:
         # fallback, do we want this?
         queue_name = "jobs:queued"
