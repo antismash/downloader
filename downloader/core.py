@@ -76,7 +76,7 @@ def run_loop(config: Config, db: redis.Redis) -> None:
             download_job_files(config, job)
         except (DownloadError, ValidationError, ValueError) as err:
             job.state = "failed"
-            job.status = "Failed to download file form NCBI"
+            job.status = "Failed to download file from NCBI"
             job.target_queues.append(config.failed_queue)
             if isinstance(err, ValidationError):
                 VALIDATION_ERROR.inc()
