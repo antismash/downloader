@@ -29,7 +29,7 @@ tests_require = [
 
 
 def read_version():
-    for line in open(os.path.join('downloader', '__version__.py'), 'r'):
+    for line in open(os.path.join('downloader', 'version.py'), 'r'):
         if line.startswith('__version__'):
             return line.split('=')[-1].strip().strip("'")
 
