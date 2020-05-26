@@ -43,13 +43,13 @@ def run(config: Config) -> None:
             start_http_server(config.metrics_port)
         while True:
             if control.fetch().stop_scheduled:
-                print("stop scheduled, exiting")
+                logging.info("stop scheduled, exiting")
                 break
             run_loop(config, db)
             control.alive()
             time.sleep(1)
     finally:
-        print("cleaning up")
+        logging.info("cleaning up")
         control.delete()
 
 
@@ -87,7 +87,7 @@ def run_loop(config: Config, db: redis.Redis) -> None:
             elif isinstance(err, DownloadError):
                 DOWNLOAD_ERROR.inc()
             elif isinstance(err, ValueError):
-                print("ValueError raised when trying to download {j.job_id}:{j.download}".format(j=job))
+                logging.error("ValueError raised when trying to download {j.job_id}:{j.download}".format(j=job))
                 DOWNLOAD_ERROR.inc()
 
     if job.target_queues:
