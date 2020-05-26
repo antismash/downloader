@@ -9,6 +9,7 @@ from ncbi_acc_download.core import Config as NadConfig
 from ncbi_acc_download.core import download_to_file
 from ncbi_acc_download.errors import (
     DownloadError,
+    InvalidIdError,
     ValidationError,
 )
 import os
@@ -81,11 +82,10 @@ def run_loop(config: Config, db: redis.Redis) -> None:
             job.target_queues.append(config.failed_queue)
             if isinstance(err, ValidationError):
                 VALIDATION_ERROR.inc()
+            elif isinstance(err, InvalidIdError):
+                INVALID_ID.inc()
             elif isinstance(err, DownloadError):
-                if str(err).startswith("Download failed with"):
-                    INVALID_ID.inc()
-                else:
-                    DOWNLOAD_ERROR.inc()
+                DOWNLOAD_ERROR.inc()
             elif isinstance(err, ValueError):
                 print("ValueError raised when trying to download {j.job_id}:{j.download}".format(j=job))
                 DOWNLOAD_ERROR.inc()
