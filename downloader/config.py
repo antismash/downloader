@@ -14,6 +14,7 @@ class Config:
         "name",
         "redis_db",
         "redis_host",
+        "redis_pass",
         "redis_port",
         "use_metrics",
         "workdir",
@@ -27,6 +28,7 @@ class Config:
                  redis_db: int = 0,
                  redis_host: str = "localhost",
                  redis_port: int = 6379,
+                 redis_pass: str | None = None,
                  use_metrics: bool = True,
                  workdir: str = "upload",
                 ) -> None:
@@ -43,11 +45,12 @@ class Config:
         self.redis_host = redis_host
         self.redis_port = redis_port
         self.redis_db = redis_db
+        self.redis_pass = redis_pass
 
     def __str__(self) -> str:
         return (
             "Config(n={c.name}, "
-            "redis=redis://{c.redis_host}:{c.redis_port}/{c.redis_db}, "
+            "redis=redis://default:{c.redis_pass}@{c.redis_host}:{c.redis_port}/{c.redis_db}, "
             "q={c.download_queue}, f={c.failed_queue}, "
             "w={c.workdir}, m={c.use_metrics}({c.metrics_port}))".format(c=self))
 
@@ -65,6 +68,8 @@ class Config:
                 params['redis_db'] = config['redis']['db']
             if 'port' in config['redis']:
                 params['redis_port'] = config['redis']['port']
+            if 'pass' in config['redis']:
+                params['redis_pass'] = config['redis']['pass']
         if 'antismash' in config:
             if 'failed_queue' in config['antismash']:
                 params['failed_queue'] = config['antismash']['failed_queue']
@@ -76,5 +81,5 @@ class Config:
             if 'port' in config['metrics']:
                 params['metrics_port'] = config['metrics']['port']
             if 'use_metrics' in config['metrics']:
-                params['use_metrics'] - config['metrics']['use_metrics']
+                params['use_metrics'] = config['metrics']['use_metrics']
         return cls(name, **params)

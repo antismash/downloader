@@ -125,5 +125,6 @@ def create_db(config: Config) -> redis.Redis:
     return redis.Redis(host=config.redis_host,
                        port=config.redis_port,
                        db=config.redis_db,
+                       password=config.redis_pass,
                        encoding="utf-8",
                        decode_responses=True)
