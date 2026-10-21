@@ -1,5 +1,7 @@
 """Core functionality for the antiSMASH download service."""
 
+from pathlib import Path
+
 from antismash_models import (
     SyncControl as Control,
     SyncJob as Job,
@@ -24,7 +26,7 @@ import time
 from downloader.config import Config
 from downloader.version import git_version
 
-
+MAX_FILE_NAME_LENGTH = 32
 DOWNLOAD_TIME = Summary("download_processing_seconds", "Time spent downloading files from NCBI")
 INVALID_ID = Counter("download_invalid_id_total", "Number of downloads failed due to an invalid ID")
 DOWNLOAD_ERROR = Counter("download_unknown_error_total", "Number of downloads failed due to an unknown errror")
@@ -108,16 +110,44 @@ def download_job_files(config: Config, job: Job) -> None:
     job.trace.append(config.name)
     job.commit()
 
-    dl_prefix = os.path.join(config.workdir, job.job_id, 'input', job.download)
-    nad_conf = NadConfig(format="genbank", recursive=True)
+    # Validate the original job ID before constructing its directory.
+    job_id = job.job_id
+    if job_id in {"", ".", ".."} or "/" in job_id or "\\" in job_id:
+        raise ValueError("Invalid job ID")
 
+    root = Path(config.workdir).resolve(strict=True)
+    expected_input = root / job_id / "input"
+    input_dir = expected_input.resolve(strict=True)
+
+    # Reject symlinks that redirect the job directory elsewhere.
+    if input_dir != expected_input:
+        raise ValueError("Job input directory is redirected")
+
+    dl_name = sanitize_filename(job.download[:MAX_FILE_NAME_LENGTH])
+    if dl_name in {"", ".", ".."}:
+        raise ValueError("Invalid download filename")
+
+    destination = (input_dir / f"{dl_name}.gbk").resolve()
+
+    if not destination.is_relative_to(input_dir):
+        raise ValueError("Download destination escapes job input directory")
+
+    # The library adds ".gbk" itself.
+    dl_prefix = str(input_dir / dl_name)
+    nad_conf = NadConfig(format="genbank", recursive=True)
     download_to_file(job.download, nad_conf, dl_prefix)
 
+    job.filename = str(destination)
     job.state = 'queued'
     job.needs_download = False
     job.status = "pending"
-    job.filename = '{}.gbk'.format(job.download)
     job.commit()
+
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitize a filename to be safe for use in the filesystem."""
+    # remove ../ sequences and any other potentially dangerous characters
+    return os.path.normpath(filename).replace("..", "").replace("/", "_").replace("\\", "_")
 
 
 def create_db(config: Config) -> redis.Redis:
