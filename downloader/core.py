@@ -139,7 +139,8 @@ def download_job_files(config: Config, job: Job) -> None:
     nad_conf = NadConfig(format="genbank", recursive=True)
     download_to_file(job.download, nad_conf, dl_prefix)
 
-    job.filename = str(destination)
+    # The dispatcher mounts the job's input directory at /input in its container.
+    job.filename = destination.name
     job.state = 'queued'
     job.needs_download = False
     job.status = "pending"

@@ -167,7 +167,7 @@ def test_download_job_files_success(db, download_context):
     assert saved.state == "queued"
     assert saved.status == "pending"
     assert saved.needs_download is False
-    assert saved.filename == str(destination.resolve())
+    assert saved.filename == destination.name
     assert saved.trace == ["submitter", cfg.name]
     assert saved.download == "NC_000001.1"
 
@@ -190,7 +190,7 @@ def test_download_job_files_contains_download_filename(db, download_context, acc
     assert prefix == str(input_dir / stem)
     destination = Path(f"{prefix}.gbk").resolve()
     assert destination.is_relative_to(input_dir.resolve())
-    assert Job(db, job.job_id).fetch().filename == str(destination)
+    assert Job(db, job.job_id).fetch().filename == destination.name
 
 
 @pytest.mark.parametrize("job_id", [
