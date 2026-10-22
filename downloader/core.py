@@ -147,7 +147,7 @@ def download_job_files(config: Config, job: Job) -> None:
 def sanitize_filename(filename: str) -> str:
     """Sanitize a filename to be safe for use in the filesystem."""
     # remove ../ sequences and any other potentially dangerous characters
-    return os.path.normpath(filename).replace("..", "").replace("/", "_").replace("\\", "_")
+    return filename.replace("..", "").replace("/", "_").replace("\\", "_")
 
 
 def create_db(config: Config) -> redis.Redis:

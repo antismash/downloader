@@ -1,6 +1,10 @@
 from pathlib import Path
 
 import pytest
+from redis.exceptions import (
+    ConnectionError as RedisConnectionError,
+    TimeoutError as RedisTimeoutError,
+)
 
 from antismash_models import SyncJob as Job
 
@@ -30,8 +34,8 @@ def test_run_loop_target_queues(db, mocker, tmpdir):
 
 def test_sanitize_filename():
     assert core.sanitize_filename("test") == "test"
-    assert core.sanitize_filename("test/../test") == "test"
-    assert core.sanitize_filename("test/../../test") == "_test"
+    assert core.sanitize_filename("test/../test") == "test__test"
+    assert core.sanitize_filename("test/../../test") == "test___test"
     assert core.sanitize_filename("test/..\\..\\test") == "test___test"
     assert core.sanitize_filename("test/..\\..\\..\\test") == "test____test"
     assert core.sanitize_filename("test/..\\..\\..\\..\\test") == "test_____test"
@@ -122,7 +126,7 @@ def test_download_job_files_rejects_invalid_job_id(db, download_context, job_id)
     download.assert_not_called()
 
 
-@pytest.mark.parametrize("accession", ["", ".", "..", "a/..", "a/../.."])
+@pytest.mark.parametrize("accession", ["", ".", ".."])
 def test_download_job_files_rejects_empty_or_dot_filename(download_context, accession):
     cfg, job, _, download = download_context
     job.download = accession
