@@ -101,14 +101,7 @@ def run_loop(config: Config, db: redis.Redis) -> None:
                 logging.error("ValueError raised when trying to download {j.job_id}:{j.download}".format(j=job))
                 DOWNLOAD_ERROR.inc()
 
-    if job.target_queues:
-        queue_name = job.target_queues.pop()
-    else:
-        # fallback, do we want this?
-        queue_name = "jobs:queued"
-    job.commit()
-    db.lrem(my_queue, 1, job.job_id)
-    db.lpush(queue_name, job.job_id)
+    move_job(job, db, my_queue)
 
 
 @DOWNLOAD_TIME.time()
@@ -167,3 +160,16 @@ def create_db(config: Config) -> redis.Redis:
                        password=config.redis_pass,
                        encoding="utf-8",
                        decode_responses=True)
+
+
+def move_job(job: Job, db: redis.Redis, source_queue: str, target_queue: str | None = None) -> None:
+    """Move a job from one queue to another."""
+    if target_queue is None and job.target_queues:
+        target_queue = job.target_queues.pop()
+        job.commit()
+    if target_queue is None:
+        target_queue = "jobs:queued"
+    with db.pipeline(transaction=True) as pipe:
+        pipe.lrem(source_queue, 1, job.job_id)
+        pipe.lpush(target_queue, job.job_id)
+        pipe.execute()
