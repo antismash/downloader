@@ -32,6 +32,88 @@ def test_run_loop_target_queues(db, mocker, tmpdir):
     assert db.rpop("jobs:special") == job.job_id
 
 
+@pytest.mark.parametrize("source", ["pending", "recovery"])
+@pytest.mark.parametrize("field, value", [
+    pytest.param(None, None, id="missing-job"),
+    pytest.param("trace", "not valid JSON", id="malformed-json"),
+    pytest.param("from_pos", "not an integer", id="invalid-number"),
+    pytest.param("sideload_simple", ":1-2", id="invalid-sideload-accession"),
+])
+def test_run_loop_skips_unfetchable_job_and_continues(
+    db, mocker, tmp_path, caplog, source, field, value,
+):
+    cfg = config.Config(name="test", workdir=str(tmp_path), use_metrics=False)
+    recovery_queue = f"{cfg.name}:downloading"
+    bad_id = "bacteria-bad"
+    download = mocker.patch("downloader.core.download_job_files")
+    if field is not None:
+        bad = Job(db, bad_id)
+        bad.needs_download = True
+        bad.download = "NC_000001.1"
+        bad.commit()
+        # Corrupt the stored record so the real model's fetch/parser is exercised.
+        db.hset(f"job:{bad_id}", field, value)
+
+    good = Job(db, "bacteria-good")
+    good.target_queues = ["jobs:ready"]
+    good.commit()
+    db.lpush(cfg.download_queue, good.job_id)
+    if source == "pending":
+        db.rpush(cfg.download_queue, bad_id)
+    else:
+        db.lpush(recovery_queue, bad_id)
+
+    core.run_loop(cfg, db)
+
+    assert db.lrange(recovery_queue, 0, -1) == []
+    assert db.lrange(cfg.download_queue, 0, -1) == [good.job_id]
+    assert db.lrange("jobs:ready", 0, -1) == []
+    assert bad_id in caplog.text
+    download.assert_not_called()
+
+    core.run_loop(cfg, db)
+
+    assert db.lrange(recovery_queue, 0, -1) == []
+    assert db.lrange(cfg.download_queue, 0, -1) == []
+    assert db.lrange("jobs:ready", 0, -1) == [good.job_id]
+    download.assert_not_called()
+
+
+@pytest.mark.parametrize("source", ["pending", "recovery"])
+@pytest.mark.parametrize("error_type", [RedisConnectionError, RedisTimeoutError])
+def test_run_loop_preserves_job_after_redis_fetch_failure(
+    db, mocker, tmp_path, source, error_type,
+):
+    cfg = config.Config(name="test", workdir=str(tmp_path), use_metrics=False)
+    recovery_queue = f"{cfg.name}:downloading"
+    job = Job(db, "bacteria-123456")
+    job.target_queues = ["jobs:ready"]
+    job.commit()
+    record = db.hgetall(f"job:{job.job_id}")
+    queue = cfg.download_queue if source == "pending" else recovery_queue
+    db.lpush(queue, job.job_id)
+    error = error_type("Redis unavailable during fetch")
+    # EXISTS is the first Redis operation inside Job.fetch(), after claiming the ID.
+    exists = mocker.patch.object(db, "exists", side_effect=error)
+
+    with pytest.raises(error_type) as caught:
+        core.run_loop(cfg, db)
+
+    assert caught.value is error
+    assert db.lrange(recovery_queue, 0, -1) == [job.job_id]
+    assert db.lrange(cfg.download_queue, 0, -1) == []
+    assert db.lrange("jobs:ready", 0, -1) == []
+    assert db.lrange(cfg.failed_queue, 0, -1) == []
+    assert db.hgetall(f"job:{job.job_id}") == record
+
+    mocker.stop(exists)
+    core.run_loop(cfg, db)
+
+    assert db.lrange(recovery_queue, 0, -1) == []
+    assert db.lrange("jobs:ready", 0, -1) == [job.job_id]
+    assert Job(db, job.job_id).fetch().target_queues == []
+
+
 def test_sanitize_filename():
     assert core.sanitize_filename("test") == "test"
     assert core.sanitize_filename("test/../test") == "test__test"

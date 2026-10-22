@@ -72,7 +72,16 @@ def run_loop(config: Config, db: redis.Redis) -> None:
     if uid is None:
         return
 
-    job = Job(db, uid).fetch()
+    try:
+        job = Job(db, uid).fetch()
+    except ValueError:
+        logging.error("Invalid job ID %s, skipping", uid)
+        db.lrem(my_queue, 1, uid)
+        return
+    except IndexError:
+        logging.error("Job %s failed to parse, skipping", uid)
+        db.lrem(my_queue, 1, uid)
+        return
     if job.needs_download and job.download:
         try:
             logging.info("Downloading files for %s", job.job_id)
