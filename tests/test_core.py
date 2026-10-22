@@ -277,10 +277,14 @@ def test_download_job_files_propagates_failure_without_marking_success(db, downl
     cfg, job, _, download = download_context
     download.side_effect = error
 
-    with pytest.raises(type(error)) as caught:
+    expected_type = core.DownloadError if isinstance(error, OSError) else type(error)
+    with pytest.raises(expected_type) as caught:
         core.download_job_files(cfg, job)
 
-    assert caught.value is error
+    if isinstance(error, OSError):
+        assert str(error) in str(caught.value)
+    else:
+        assert caught.value is error
     download.assert_called_once()
     saved = Job(db, job.job_id).fetch()
     assert saved.state == "downloading"

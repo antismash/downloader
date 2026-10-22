@@ -137,7 +137,10 @@ def download_job_files(config: Config, job: Job) -> None:
     # The library adds ".gbk" itself.
     dl_prefix = str(input_dir / dl_name)
     nad_conf = NadConfig(format="genbank", recursive=True)
-    download_to_file(job.download, nad_conf, dl_prefix)
+    try:
+        download_to_file(job.download, nad_conf, dl_prefix)
+    except OSError as e:
+        raise DownloadError(f"Failed to download {job.download}: {e}")
 
     # The dispatcher mounts the job's input directory at /input in its container.
     job.filename = destination.name
